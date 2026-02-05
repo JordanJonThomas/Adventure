@@ -1,0 +1,8 @@
+[package]
+name = "adventure-bin"
+version = "0.0.1"
+edition = "2024"
+
+[dependencies]
+adventure = { path = "../adventure" }
+anyhow = "1.0"
