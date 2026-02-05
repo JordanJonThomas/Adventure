@@ -1,6 +1,6 @@
 # Adventure
 
-A text-based adventure game engine inspired by Zork, built in Rust.
+A text-based adventure game engine inspired by Zork, built in Rust 🦀.
 <img width="1703" height="379" alt="image" src="https://github.com/user-attachments/assets/3f24d0aa-5944-41bf-a0d1-c17e22a16dbf" />
 
 ## How to Play
