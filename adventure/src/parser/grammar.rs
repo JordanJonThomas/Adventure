@@ -112,6 +112,10 @@ fn parse_noun_phrase(tokens: &[Token]) -> Result<NounPhrase, ParseError> {
         .filter(|tk| Determiner::try_from(tk.text.as_str()).is_err())
         .collect();
 
+    if filtered.is_empty() {
+        return Err(ParseError::NotParseable);
+    }
+
     let noun = filtered.last().unwrap().text.clone();
     let adjectives = filtered[..filtered.len() - 1]
         .iter()
