@@ -33,6 +33,7 @@ pub enum ConditionPredicate {
 
     // World state checks
     TurnCount { min: Option<u32>, max: Option<u32> },
+    GameFlag { flag_name: String, value: bool },
 
     // Composable logic
     And { predicates: Vec<ConditionPredicate> },
@@ -112,6 +113,9 @@ impl Game {
                 let min_ok = min.map_or(true, |m| self.turn >= m);
                 let max_ok = max.map_or(true, |m| self.turn <= m);
                 min_ok && max_ok
+            }
+            ConditionPredicate::GameFlag { flag_name, value } => {
+                self.world.flags.get(flag_name).map_or(false, |v| v == value)
             }
 
             // Composable logic (with short-circuit evaluation)

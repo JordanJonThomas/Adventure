@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use crate::models::Direction;
+use crate::models::{Direction, condition::ConditionTrigger};
 
 /// Represents a place the player can enter.
 /// A room may contain entities the player can interact with.
@@ -18,7 +18,6 @@ pub struct Room {
     pub entered: bool,
     /// All Items in the room
     pub items: Vec<i32>,
-    // TODO: Remnant from older version
-    // Any conditions in the room
-    //pub conditions: Vec<ConditionTrigger>,
+    /// Conditions that can trigger in this room.
+    pub conditions: Vec<ConditionTrigger>,
 }

@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use crate::models::{Room, Direction};
+use crate::models::{Room, Direction, ConditionTrigger};
 
 /// A room builder object, used to create rooms
 pub struct RoomBuilder {
@@ -9,7 +9,7 @@ pub struct RoomBuilder {
     pub exits: HashMap<Direction, i32>,
     pub entered: bool,
     pub items: Vec<i32>,
-    //pub conditions: Vec<ConditionTrigger>,
+    pub conditions: Vec<ConditionTrigger>,
 }
 
 impl RoomBuilder {
@@ -22,7 +22,7 @@ impl RoomBuilder {
             exits: HashMap::new(),
             entered: false,
             items: Vec::new(),
-            //conditions: Vec::new(),
+            conditions: Vec::new(),
         }
     }
 
@@ -50,11 +50,11 @@ impl RoomBuilder {
         self
     }
 
-    /// Adds a condition to the room
-    //pub fn with_condition(mut self, cond: ConditionTrigger) -> Self {
-    //    self.conditions.push(cond);
-    //    self
-    //}
+    /// Adds a condition that triggers when entering this room
+    pub fn with_condition(mut self, cond: ConditionTrigger) -> Self {
+        self.conditions.push(cond);
+        self
+    }
 
     /// Constructs the room object
     pub fn build(self) -> Room {
@@ -65,7 +65,7 @@ impl RoomBuilder {
             exits: self.exits,
             entered: self.entered,
             items: self.items,
-            //conditions: self.conditions,
+            conditions: self.conditions,
         }
     }
 }

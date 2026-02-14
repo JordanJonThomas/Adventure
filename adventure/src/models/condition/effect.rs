@@ -23,6 +23,7 @@ pub enum ConditionEffect {
     CloseItem { item_id: i32 },
     MoveItem { item_id: i32, to_room: i32 },
     MovePlayer { to_room: i32 },
+    SetFlag { flag_name: String, value: bool },
 
     /// The custom effect allows for rust code to be executed against the game object.
     Custom { applier: fn(&mut Game) -> Vec<String> },
@@ -143,6 +144,9 @@ impl Game {
                     if self.world.rooms.contains_key(to_room) {
                         self.current_room = *to_room;
                     }
+                }
+                ConditionEffect::SetFlag { flag_name, value } => {
+                    self.world.flags.insert(flag_name.clone(), *value);
                 }
                 ConditionEffect::Custom { applier } => {
                     let result = applier(self);

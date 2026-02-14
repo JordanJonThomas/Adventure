@@ -14,3 +14,4 @@ pub use room::Room;
 pub use item::{Item, Determiner};
 pub use behavior::ItemBehavior;
 pub use player::Player;
+pub use condition::{ConditionEffect, ConditionPredicate, ConditionTrigger, ConditionResult};

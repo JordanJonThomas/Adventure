@@ -1,7 +1,7 @@
 //! Everything that exists inside the game world.
 use std::{collections::HashMap, fmt::Display};
 use phf::phf_map;
-use crate::{errors::ParseError, models::{Item, Room}};
+use crate::{errors::ParseError, models::{Item, Room, condition::ConditionTrigger}};
 
 /// Represents the entire world of the game.
 #[derive(Debug)]
@@ -14,6 +14,10 @@ pub struct World {
     pub items: HashMap<i32, Item>,
     /// Any text that should be printed before the game starts.
     pub initial_prints: Option<Vec<String>>,
+    /// Global conditions that are checked every turn or at specific events
+    pub global_conditions: Vec<ConditionTrigger>,
+    /// Named boolean flags for tracking game state
+    pub flags: HashMap<String, bool>,
 }
 
 impl World {
@@ -23,6 +27,8 @@ impl World {
             rooms: HashMap::new(),
             items: HashMap::new(),
             initial_prints: None,
+            global_conditions: Vec::new(),
+            flags: HashMap::new(),
         }
     }
 }
