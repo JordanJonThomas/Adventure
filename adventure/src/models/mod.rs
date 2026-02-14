@@ -6,6 +6,7 @@ mod room; // Game room definition
 mod item; // Item objects and functionality
 mod behavior; // Defines what an item is capable of doing in game
 mod player; // Player object
+pub mod condition;
 
 // Re-exports
 pub use world::{World, Direction};
