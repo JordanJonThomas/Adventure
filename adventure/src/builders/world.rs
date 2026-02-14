@@ -1,11 +1,13 @@
 use std::collections::HashMap;
-use crate::models::{Room, World, Item};
+use crate::models::{Room, World, Item, ConditionTrigger};
 
 /// The WorldBuilder is used to construct a [World] object
 pub struct WorldBuilder {
     pub rooms: HashMap<i32, Room>,
     pub items: HashMap<i32, Item>,
     pub initial_prints: Option<Vec<String>>,
+    pub global_conditions: Vec<ConditionTrigger>,
+    pub flags: HashMap<String, bool>,
 }
 
 impl WorldBuilder {
@@ -15,6 +17,8 @@ impl WorldBuilder {
             rooms: HashMap::new(),
             items: HashMap::new(),
             initial_prints: None,
+            global_conditions: Vec::new(),
+            flags: HashMap::new(),
         }
     }
 
@@ -36,12 +40,26 @@ impl WorldBuilder {
         self
     }
 
+    /// Adds a global condition that is evaluated every turn
+    pub fn with_global_condition(mut self, cond: ConditionTrigger) -> Self {
+        self.global_conditions.push(cond);
+        self
+    }
+
+    /// Sets an initial flag value
+    pub fn with_flag(mut self, name: &str, value: bool) -> Self {
+        self.flags.insert(name.to_string(), value);
+        self
+    }
+
     /// Consumes self and builds the world object
     pub fn build(self) -> World {
         World {
             rooms: self.rooms,
             items: self.items,
-            initial_prints: self.initial_prints
+            initial_prints: self.initial_prints,
+            global_conditions: self.global_conditions,
+            flags: self.flags,
         }
     }
 }

@@ -7,8 +7,28 @@ use crate::{
 
 impl Game {
     /// Executes an action, modifying game state and returning output messages
+    ///
+    /// Before executing the action, evaluates and executes all relevant conditions:
+    /// - Global conditions (always active)
+    /// - Current room conditions (active in the room the player is in)
+    ///
+    /// If any condition blocks the action, effects still execute but the action itself does not.
     pub fn execute_action(&mut self, action: Action) -> Result<Vec<String>, GameError> {
-        match action {
+        // Evaluate and execute all relevant conditions
+        let condition_result = self.evaluate_and_execute_conditions(&action);
+
+        // Start output with "before" messages (printed before everything)
+        let mut output = condition_result.output_before;
+
+        // If action is blocked, add regular messages and return without executing action
+        if condition_result.blocked {
+            output.extend(condition_result.output);
+            output.push(String::new()); // Single ending empty line
+            return Ok(output);
+        }
+
+        // Execute the action
+        let action_output = match action {
             Action::Move { dir } => execute_move(self, dir),
             Action::Get { items } => execute_get(self, items),
             Action::Drop { items } => execute_drop(self, items),
@@ -19,6 +39,67 @@ impl Game {
             Action::Close { target } => execute_close(self, target),
             Action::Attack { target, weapon } => execute_attack(self, target, weapon),
             Action::Unlock { target, key } => execute_unlock(self, target, key),
+        }?;
+
+        // Add action output (includes room description)
+        output.extend(action_output);
+
+        // Add condition messages after action output
+        output.extend(condition_result.output);
+
+        output.push(String::new()); // trailing newline
+        Ok(output)
+    }
+
+    /// Evaluates and executes conditions relevant to the given action.
+    ///
+    /// Checks conditions in this order:
+    /// 1. Global conditions (always active)
+    /// 2. Current room conditions (active in the room player is in)
+    ///
+    /// Returns a ConditionResult with all messages and whether action is blocked.
+    fn evaluate_and_execute_conditions(&mut self, action: &Action) -> crate::models::ConditionResult {
+        use crate::models::ConditionResult;
+
+        let mut all_messages = Vec::new();
+        let mut all_messages_before = Vec::new();
+        let mut is_blocked = false;
+
+        // 1. Check global conditions
+        for i in 0..self.world.global_conditions.len() {
+            let trigger = &self.world.global_conditions[i];
+            if self.evaluate_predicate_with_action(&trigger.predicates, action) {
+                // Clone effects to avoid borrow conflict
+                let effects = trigger.effects.clone();
+                let result = self.execute_effect(&effects);
+                all_messages.extend(result.output);
+                all_messages_before.extend(result.output_before);
+                is_blocked = is_blocked || result.blocked;
+            }
+        }
+
+        // 2. Check current room conditions
+        let current_room_id = self.current_room;
+        let room_condition_count = self.world.rooms.get(&current_room_id)
+            .map(|r| r.conditions.len())
+            .unwrap_or(0);
+
+        for i in 0..room_condition_count {
+            let trigger = &self.world.rooms[&current_room_id].conditions[i];
+            if self.evaluate_predicate_with_action(&trigger.predicates, action) {
+                // Clone effects to avoid borrow conflict
+                let effects = trigger.effects.clone();
+                let result = self.execute_effect(&effects);
+                all_messages.extend(result.output);
+                all_messages_before.extend(result.output_before);
+                is_blocked = is_blocked || result.blocked;
+            }
+        }
+
+        ConditionResult {
+            output: all_messages,
+            output_before: all_messages_before,
+            blocked: is_blocked,
         }
     }
 }
@@ -33,18 +114,14 @@ fn execute_move(game: &mut Game, dir: crate::models::Direction) -> Result<Vec<St
     game.current_room = new_room_id;
     game.turn += 1;
 
-    // Get new room description
+    // Get new room and determine if using long description
     let new_room = game.get_current_room();
-    let mut output = vec![new_room.name.clone()]; // Show room name on entry
+    let is_first_visit = !new_room.entered;
 
-    if !new_room.entered {
-        // Show long_desc if first visit, otherwise short desc
-        if let Some(desc) = new_room.long_desc.as_ref()
-            .or(new_room.desc.as_ref())
-            .map(|s| s.clone()) {
-            output.push(desc);
-        }
+    // Get full description including conditional text
+    let mut output = new_room.get_full_description(game, is_first_visit);
 
+    if is_first_visit {
         // List visible items on first visit
         let room_item_ids = new_room.items.clone();
         for &item_id in &room_item_ids {
@@ -61,12 +138,8 @@ fn execute_move(game: &mut Game, dir: crate::models::Direction) -> Result<Vec<St
 
         // Mark room as entered
         game.get_current_room_mut().entered = true;
-    } else if let Some(desc) = &new_room.desc {
-        // show short desc only on re-entry
-        output.push(desc.clone());
     }
 
-    output.push(String::new());
     Ok(output)
 }
 
@@ -138,7 +211,6 @@ fn execute_get(game: &mut Game, item_ids: Vec<i32>) -> Result<Vec<String>, GameE
     }
 
     game.turn += 1;
-    output.push(String::new()); // Empty line
     Ok(output)
 }
 
@@ -164,7 +236,6 @@ fn execute_drop(game: &mut Game, item_ids: Vec<i32>) -> Result<Vec<String>, Game
     }
 
     game.turn += 1;
-    output.push(String::new()); // Empty line
     Ok(output)
 }
 
@@ -210,7 +281,6 @@ fn execute_put(game: &mut Game, item_id: i32, container_id: i32) -> Result<Vec<S
     game.turn += 1;
     Ok(vec![
         format!("You put the {} in the {}.", item_name, container_name),
-        String::new()
     ])
 }
 
@@ -224,15 +294,9 @@ fn execute_look(game: &mut Game, target: Option<i32>) -> Result<Vec<String>, Gam
 
     match target {
         None => {
-            // Look at room
+            // Look at room - use long description (same as first visit)
             let room = game.get_current_room();
-            output.push(room.name.clone());
-
-            if let Some(long_desc) = &room.long_desc {
-                output.push(long_desc.clone());
-            } else if let Some(desc) = &room.desc {
-                output.push(desc.clone());
-            }
+            output = room.get_full_description(game, true);
 
             // List visible items
             let room_item_ids = room.items.clone();
@@ -264,7 +328,6 @@ fn execute_look(game: &mut Game, target: Option<i32>) -> Result<Vec<String>, Gam
         }
     }
 
-    output.push(String::new()); // Empty line
     Ok(output)
 }
 
@@ -272,9 +335,9 @@ fn execute_look(game: &mut Game, target: Option<i32>) -> Result<Vec<String>, Gam
 fn execute_read(game: &mut Game, target: i32) -> Result<Vec<String>, GameError> {
     let item = &game.world.items[&target];
     let Some(text) = item.get_readable_text() else {
-        return Ok(vec!["You cannot read that...".to_string(), String::new()]);
+        return Ok(vec!["You cannot read that...".to_string()]);
     };
-    Ok(vec![text.to_string(), String::new()])
+    Ok(vec![text.to_string()])
 }
 
 /// Executes the open action, attempting to open the specified object.
@@ -293,17 +356,17 @@ fn execute_open(game: &mut Game, target: i32) -> Result<Vec<String>, GameError> 
 
     // Check if item can be opened
     if !item.has_openable() {
-        return Ok(vec![format!("You can't open the {}.", item_name), String::new()]);
+        return Ok(vec![format!("You can't open the {}.", item_name)]);
     }
 
     // Check if locked
     if item.is_locked() {
-        return Ok(vec![format!("The {} is locked.", item_name), String::new()]);
+        return Ok(vec![format!("The {} is locked.", item_name)]);
     }
 
     // Check if already open
     if item.is_open() {
-        return Ok(vec![format!("The {} is already open.", item_name), String::new()]);
+        return Ok(vec![format!("The {} is already open.", item_name)]);
     }
 
     // Open it
@@ -315,7 +378,6 @@ fn execute_open(game: &mut Game, target: i32) -> Result<Vec<String>, GameError> 
     output.extend(item.format_container_contents(&game.world.items));
 
     game.turn += 1;
-    output.push(String::new());
     Ok(output)
 }
 
@@ -328,19 +390,19 @@ fn execute_close(game: &mut Game, target: i32) -> Result<Vec<String>, GameError>
 
     // Check if item can be closed
     if !item.has_openable() {
-        return Ok(vec![format!("You can't close the {}.", item_name), String::new()]);
+        return Ok(vec![format!("You can't close the {}.", item_name)]);
     }
 
     // Check if already closed
     if !item.is_open() {
-        return Ok(vec![format!("The {} is already closed.", item_name), String::new()]);
+        return Ok(vec![format!("The {} is already closed.", item_name)]);
     }
 
     // Close it
     item.set_open(false);
 
     game.turn += 1;
-    Ok(vec![format!("You close the {}.", item_name), String::new()])
+    Ok(vec![format!("You close the {}.", item_name)])
 }
 
 /// Executes the attack action, reminding the user that kindness is always an option :)
@@ -374,7 +436,6 @@ fn execute_unlock(game: &mut Game, target_id: i32, key_id: i32) -> Result<Vec<St
     game.world.items.get_mut(&target_id).unwrap().set_locked(false);
 
     Ok(vec![
-        format!("You unlock {} with {}.", target_name, key_name), 
-        String::new(),
+        format!("You unlock {} with {}.", target_name, key_name),
     ])
 }
