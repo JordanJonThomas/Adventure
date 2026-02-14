@@ -10,7 +10,7 @@ pub mod condition;
 
 // Re-exports
 pub use world::{World, Direction};
-pub use room::Room;
+pub use room::{Room, ConditionalDescription};
 pub use item::{Item, Determiner};
 pub use behavior::ItemBehavior;
 pub use player::Player;

@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use crate::models::{Room, Direction, ConditionTrigger};
+use crate::models::{Room, Direction, ConditionTrigger, ConditionPredicate, ConditionalDescription};
 
 /// A room builder object, used to create rooms
 pub struct RoomBuilder {
@@ -10,6 +10,7 @@ pub struct RoomBuilder {
     pub entered: bool,
     pub items: Vec<i32>,
     pub conditions: Vec<ConditionTrigger>,
+    pub conditional_descriptions: Vec<ConditionalDescription>,
 }
 
 impl RoomBuilder {
@@ -23,6 +24,7 @@ impl RoomBuilder {
             entered: false,
             items: Vec::new(),
             conditions: Vec::new(),
+            conditional_descriptions: Vec::new(),
         }
     }
 
@@ -56,6 +58,21 @@ impl RoomBuilder {
         self
     }
 
+    /// Adds a conditional description that appears based on game state
+    /// 
+    /// # Arguments
+    /// * `predicate` - Condition that must be true for text to display
+    /// * `text` - Text to append to room description
+    /// * `show_in_short` - If true, show with both long and short descriptions. If false, only with long_desc.
+    pub fn with_conditional_desc(mut self, predicate: ConditionPredicate, text: &str, show_in_short: bool) -> Self {
+        self.conditional_descriptions.push(ConditionalDescription {
+            predicate,
+            text: text.to_string(),
+            show_in_short,
+        });
+        self
+    }
+
     /// Constructs the room object
     pub fn build(self) -> Room {
         Room {
@@ -66,6 +83,7 @@ impl RoomBuilder {
             entered: self.entered,
             items: self.items,
             conditions: self.conditions,
+            conditional_descriptions: self.conditional_descriptions,
         }
     }
 }

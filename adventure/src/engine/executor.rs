@@ -114,18 +114,14 @@ fn execute_move(game: &mut Game, dir: crate::models::Direction) -> Result<Vec<St
     game.current_room = new_room_id;
     game.turn += 1;
 
-    // Get new room description
+    // Get new room and determine if using long description
     let new_room = game.get_current_room();
-    let mut output = vec![new_room.name.clone()]; // Show room name on entry
+    let is_first_visit = !new_room.entered;
 
-    if !new_room.entered {
-        // Show long_desc if first visit, otherwise short desc
-        if let Some(desc) = new_room.long_desc.as_ref()
-            .or(new_room.desc.as_ref())
-            .map(|s| s.clone()) {
-            output.push(desc);
-        }
+    // Get full description including conditional text
+    let mut output = new_room.get_full_description(game, is_first_visit);
 
+    if is_first_visit {
         // List visible items on first visit
         let room_item_ids = new_room.items.clone();
         for &item_id in &room_item_ids {
@@ -142,9 +138,6 @@ fn execute_move(game: &mut Game, dir: crate::models::Direction) -> Result<Vec<St
 
         // Mark room as entered
         game.get_current_room_mut().entered = true;
-    } else if let Some(desc) = &new_room.desc {
-        // show short desc only on re-entry
-        output.push(desc.clone());
     }
 
     Ok(output)
@@ -301,15 +294,9 @@ fn execute_look(game: &mut Game, target: Option<i32>) -> Result<Vec<String>, Gam
 
     match target {
         None => {
-            // Look at room
+            // Look at room - use long description (same as first visit)
             let room = game.get_current_room();
-            output.push(room.name.clone());
-
-            if let Some(long_desc) = &room.long_desc {
-                output.push(long_desc.clone());
-            } else if let Some(desc) = &room.desc {
-                output.push(desc.clone());
-            }
+            output = room.get_full_description(game, true);
 
             // List visible items
             let room_item_ids = room.items.clone();
