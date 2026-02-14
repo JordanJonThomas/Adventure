@@ -53,6 +53,12 @@ Items can have multiple behaviors that determine their functionality:
 - Item descriptions that change based on context
 - Adjectives for item disambiguation (e.g., "red sword" vs "blue sword")
 - Custom print messages for specific item events
+- **Condition system** for dynamic gameplay and puzzles:
+  - Block actions based on inventory, location, or game state
+  - Reveal hidden items or areas when conditions are met
+  - Display conditional messages and room descriptions
+  - Track game state with flags
+  - Compose complex logic with AND/OR/NOT predicates
 
 ## Building a Map
 
@@ -124,20 +130,7 @@ pub fn create_world() -> WorldBuilder {
 
 ## Planned Features
 
-Although pretty neat, this project in its current state is missiing a few features that stop it from being fully Zork-complete, and theres a few other neat idea's I have planned aswell, including but not limited to:
-
-### Conditions
-Conditions will allow map designers to restrict (and enhance) gameplay by preventing a player from using actions under certain circumstances. For example:
-```bash
-> Go east
-It would be foolish to enter the dark caverns without a light source.
-
-> Get the torch
-You grab the torch.
-
-> Go east
-You descend down a dark cavern passageway, the light in your hand guiding the way.
-```
+Although pretty neat, this project in its current state is missing a few features that stop it from being fully Zork-complete, and there's a few other neat ideas I have planned as well, including but not limited to:
 
 ### NPC's, Enemies and Combat
 What good is an adventure game without person to person interaction!? The original zork franchise contains many creatures to combat, making this feature high up on my priority list.
