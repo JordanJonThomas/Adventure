@@ -10,7 +10,7 @@ pub enum ItemRole {
 }
 
 /// A ConditionPredicate is a check against the game state.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ConditionPredicate {
     // Inventory checks
     HasItem { item_id: i32 },
