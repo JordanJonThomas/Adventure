@@ -55,7 +55,7 @@ impl Game {
         let room_item_ids = room.items.clone();
         for &item_id in &room_item_ids {
             let item = &self.world.items[&item_id];
-            if !item.is_hidden() {
+            if item.should_list_in_room() {
                 prints.push(item.get_room_description());
             }
         }

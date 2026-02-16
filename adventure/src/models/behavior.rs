@@ -24,10 +24,16 @@ pub enum ItemBehavior {
     },
 
     /// Hidden from view until revealed by some trigger
+    /// These items cannot be interacted with until revealed.
     Hidden {
         /// Whether the item has been revealed to the player
         revealed: bool
     },
+
+    /// Scenery item that doesn't show in automatic room listings
+    /// These items are interactable but don't appear in "There is a..." descriptions.
+    /// Used for items mentioned in room descriptions (windows, walls, etc.)
+    Scenery,
 
     /// Can be used as a weapon in combat
     Weapon {
@@ -89,6 +95,18 @@ impl Item {
     pub fn is_hidden(&self) -> bool {
         self.behaviors.iter()
             .any(|b| matches!(b, ItemBehavior::Hidden { revealed: false }))
+    }
+
+    /// Returns true if the item is scenery (doesn't show in room listings)
+    pub fn is_scenery(&self) -> bool {
+        self.behaviors.iter()
+            .any(|b| matches!(b, ItemBehavior::Scenery))
+    }
+
+    /// Returns true if the item should be shown in automatic room listings
+    /// (not hidden and not scenery)
+    pub fn should_list_in_room(&self) -> bool {
+        !self.is_hidden() && !self.is_scenery()
     }
 
     /// Returns true if the item is currently open (or has no Openable behavior)

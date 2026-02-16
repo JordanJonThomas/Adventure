@@ -126,7 +126,7 @@ fn execute_move(game: &mut Game, dir: crate::models::Direction) -> Result<Vec<St
         let room_item_ids = new_room.items.clone();
         for &item_id in &room_item_ids {
             let item = &game.world.items[&item_id];
-            if !item.is_hidden() {
+            if item.should_list_in_room() {
                 output.push(item.get_room_description());
 
                 // If it's an open container, show its contents
@@ -302,7 +302,7 @@ fn execute_look(game: &mut Game, target: Option<i32>) -> Result<Vec<String>, Gam
             let room_item_ids = room.items.clone();
             for &item_id in &room_item_ids {
                 let item = &game.world.items[&item_id];
-                if !item.is_hidden() {
+                if item.should_list_in_room() {
                     output.push(item.get_room_description());
 
                     // If it's an open container, show its contents
