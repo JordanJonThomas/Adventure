@@ -238,7 +238,7 @@ pub fn cant_do_that() -> String {
         "An interesting idea...",
         "You can't be serious.",
         "Not likely.",
-        "A valiant attmept.",
+        "A valiant attempt.",
         "What a concept!",
     ];
 
